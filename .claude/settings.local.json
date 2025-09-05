@@ -23,7 +23,10 @@
       "mcp__supabase__apply_migration",
       "mcp__supabase__generate_typescript_types",
       "Bash(pnpm dlx shadcn@latest add:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Read(//Users/tristanvandoorn@makerlab.nl/Documents/Tristan/HITL-platform/model-context-protocol-mcp-with-vercel-functions/@HITL-MCP_house/**)",
+      "Read(//Users/tristanvandoorn@makerlab.nl/Documents/Tristan/HITL-platform/model-context-protocol-mcp-with-vercel-functions/**)",
+      "Bash(openssl rand:*)"
     ],
     "additionalDirectories": [
       "C:\\c\\Projects\\nextjs-better-auth-postgresql-starter-kit"
