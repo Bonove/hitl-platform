@@ -1,10 +1,22 @@
 import { createClient } from "@/utils/supabase/server"
 import { Database } from "@/types/supabase"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { validateApiKey, unauthorizedResponse, getApiKeyFingerprint } from "@/utils/auth/api-auth"
 
 type CaseStatus = Database["public"]["Enums"]["case_status"]
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Validate API key for MCP House requests
+  const authHeader = request.headers.get("authorization")
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    // This is an API request, validate the key
+    if (!validateApiKey(request)) {
+      console.log(`API auth failed from: ${getApiKeyFingerprint(request) || 'no-key'}`)
+      return unauthorizedResponse("Invalid API key")
+    }
+  }
+  // If no Bearer token, allow through (for web UI requests with cookie auth)
+  
   try {
     const body = await request.json()
     const { title, description, source, agent_id, priority = 3, metadata } = body
@@ -50,7 +62,18 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  // Validate API key for MCP House requests
+  const authHeader = request.headers.get("authorization")
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    // This is an API request, validate the key
+    if (!validateApiKey(request)) {
+      console.log(`API auth failed from: ${getApiKeyFingerprint(request) || 'no-key'}`)
+      return unauthorizedResponse("Invalid API key")
+    }
+  }
+  // If no Bearer token, allow through (for web UI requests with cookie auth)
+  
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")

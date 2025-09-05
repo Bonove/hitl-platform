@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { validateApiKey, unauthorizedResponse, getApiKeyFingerprint } from "@/utils/auth/api-auth"
 import OpenAI from "openai"
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
@@ -8,9 +9,20 @@ const openai = new OpenAI({
 })
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  // Validate API key for MCP House requests
+  const authHeader = request.headers.get("authorization")
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    // This is an API request, validate the key
+    if (!validateApiKey(request)) {
+      console.log(`API auth failed from: ${getApiKeyFingerprint(request) || 'no-key'}`)
+      return unauthorizedResponse("Invalid API key")
+    }
+  }
+  // If no Bearer token, allow through (for web UI requests with cookie auth)
+  
   try {
     const { caseId } = await params
     const body = await request.json()
@@ -134,9 +146,20 @@ export async function POST(
 }
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  // Validate API key for MCP House requests
+  const authHeader = request.headers.get("authorization")
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    // This is an API request, validate the key
+    if (!validateApiKey(request)) {
+      console.log(`API auth failed from: ${getApiKeyFingerprint(request) || 'no-key'}`)
+      return unauthorizedResponse("Invalid API key")
+    }
+  }
+  // If no Bearer token, allow through (for web UI requests with cookie auth)
+  
   try {
     const { caseId } = await params
     const supabase = await createClient()
