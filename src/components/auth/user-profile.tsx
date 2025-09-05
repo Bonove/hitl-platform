@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signOut } from "@/lib/auth-client";
+import { useAuth } from "@/providers/supabase-auth-provider";
 import { SignInButton } from "./sign-in-button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -12,18 +12,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { User, LogOut } from "lucide-react";
 
 export function UserProfile() {
-  const { data: session, isPending } = useSession();
-  const router = useRouter();
+  const { user, loading, signOut } = useAuth();
 
-  if (isPending) {
+  if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="flex flex-col items-center gap-4 p-6">
         <SignInButton />
@@ -31,27 +29,20 @@ export function UserProfile() {
     );
   }
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace("/");
-    router.refresh();
-  };
+  const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+  const userAvatar = user.user_metadata?.avatar_url;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
           <AvatarImage
-            src={session.user?.image || ""}
-            alt={session.user?.name || "User"}
+            src={userAvatar || ""}
+            alt={userName}
             referrerPolicy="no-referrer"
           />
           <AvatarFallback>
-            {(
-              session.user?.name?.[0] ||
-              session.user?.email?.[0] ||
-              "U"
-            ).toUpperCase()}
+            {userName[0].toUpperCase()}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -59,10 +50,10 @@ export function UserProfile() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {session.user?.name}
+              {userName}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {session.user?.email}
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -74,7 +65,7 @@ export function UserProfile() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} variant="destructive">
+        <DropdownMenuItem onClick={signOut} className="text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
           Log out
         </DropdownMenuItem>

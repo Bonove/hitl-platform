@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/components/auth/user-profile";
-import { useSession } from "@/lib/auth-client";
+import { useAuth } from "@/providers/supabase-auth-provider";
 import { useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
@@ -127,15 +127,15 @@ function renderMessageContent(message: MaybePartsMessage): ReactNode {
 }
 
 export default function ChatPage() {
-  const { data: session, isPending } = useSession();
+  const { user, loading } = useAuth();
   const { messages, sendMessage, status } = useChat();
   const [input, setInput] = useState("");
 
-  if (isPending) {
+  if (loading) {
     return <div className="container mx-auto px-4 py-12">Loading...</div>;
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
@@ -151,7 +151,7 @@ export default function ChatPage() {
         <div className="flex justify-between items-center mb-6 pb-4 border-b">
           <h1 className="text-2xl font-bold">AI Chat</h1>
           <span className="text-sm text-muted-foreground">
-            Welcome, {session.user.name}!
+            Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0]}!
           </span>
         </div>
 

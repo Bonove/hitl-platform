@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/lib/auth-client";
+import { useAuth } from "@/providers/supabase-auth-provider";
 import { UserProfile } from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
@@ -8,10 +8,10 @@ import { useDiagnostics } from "@/hooks/use-diagnostics";
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const { data: session, isPending } = useSession();
+  const { user, loading } = useAuth();
   const { isAiReady, loading: diagnosticsLoading } = useDiagnostics();
 
-  if (isPending) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
         Loading...
@@ -19,7 +19,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto text-center">
@@ -66,10 +66,10 @@ export default function DashboardPage() {
           </p>
           <div className="space-y-2">
             <p>
-              <strong>Name:</strong> {session.user.name}
+              <strong>Name:</strong> {user.user_metadata?.full_name || user.email?.split('@')[0]}
             </p>
             <p>
-              <strong>Email:</strong> {session.user.email}
+              <strong>Email:</strong> {user.email}
             </p>
           </div>
         </div>

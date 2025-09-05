@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/lib/auth-client";
+import { useAuth } from "@/providers/supabase-auth-provider";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +10,10 @@ import { Mail, Calendar, User, Shield, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const { data: session, isPending } = useSession();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
-  if (isPending) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div>Loading...</div>
@@ -21,13 +21,14 @@ export default function ProfilePage() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     router.push("/");
     return null;
   }
 
-  const user = session.user;
-  const createdDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
+  const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+  const userAvatar = user.user_metadata?.avatar_url;
+  const createdDate = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -55,24 +56,20 @@ export default function ProfilePage() {
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
                 <AvatarImage
-                  src={user.image || ""}
-                  alt={user.name || "User"}
+                  src={userAvatar || ""}
+                  alt={userName}
                   referrerPolicy="no-referrer"
                 />
                 <AvatarFallback className="text-lg">
-                  {(
-                    user.name?.[0] ||
-                    user.email?.[0] ||
-                    "U"
-                  ).toUpperCase()}
+                  {userName[0].toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold">{user.name}</h2>
+                <h2 className="text-2xl font-semibold">{userName}</h2>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Mail className="h-4 w-4" />
                   <span>{user.email}</span>
-                  {user.emailVerified && (
+                  {user.email_confirmed_at && (
                     <Badge variant="outline" className="text-green-600 border-green-600">
                       <Shield className="h-3 w-3 mr-1" />
                       Verified
@@ -105,7 +102,7 @@ export default function ProfilePage() {
                   Full Name
                 </label>
                 <div className="p-3 border rounded-md bg-muted/10">
-                  {user.name || "Not provided"}
+                  {userName}
                 </div>
               </div>
               <div className="space-y-2">
@@ -114,7 +111,7 @@ export default function ProfilePage() {
                 </label>
                 <div className="p-3 border rounded-md bg-muted/10 flex items-center justify-between">
                   <span>{user.email}</span>
-                  {user.emailVerified && (
+                  {user.email_confirmed_at && (
                     <Badge variant="outline" className="text-green-600 border-green-600">
                       Verified
                     </Badge>
@@ -135,8 +132,8 @@ export default function ProfilePage() {
                       Email address verification status
                     </p>
                   </div>
-                  <Badge variant={user.emailVerified ? "default" : "secondary"}>
-                    {user.emailVerified ? "Verified" : "Unverified"}
+                  <Badge variant={user.email_confirmed_at ? "default" : "secondary"}>
+                    {user.email_confirmed_at ? "Verified" : "Unverified"}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between p-4 border rounded-lg">

@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 type DiagnosticsResponse = {
   timestamp: string;
   env: {
-    POSTGRES_URL: boolean;
-    BETTER_AUTH_SECRET: boolean;
-    GOOGLE_CLIENT_ID: boolean;
-    GOOGLE_CLIENT_SECRET: boolean;
+    DATABASE_URL: boolean;
+    NEXT_PUBLIC_SUPABASE_URL: boolean;
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: boolean;
     OPENAI_API_KEY: boolean;
     NEXT_PUBLIC_APP_URL: boolean;
   };
@@ -19,7 +18,7 @@ type DiagnosticsResponse = {
   };
   auth: {
     configured: boolean;
-    routeResponding: boolean | null;
+    supabaseReachable: boolean | null;
   };
   ai: {
     configured: boolean;

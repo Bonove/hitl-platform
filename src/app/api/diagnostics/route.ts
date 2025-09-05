@@ -5,10 +5,9 @@ type StatusLevel = "ok" | "warn" | "error";
 interface DiagnosticsResponse {
   timestamp: string;
   env: {
-    POSTGRES_URL: boolean;
-    BETTER_AUTH_SECRET: boolean;
-    GOOGLE_CLIENT_ID: boolean;
-    GOOGLE_CLIENT_SECRET: boolean;
+    DATABASE_URL: boolean;
+    NEXT_PUBLIC_SUPABASE_URL: boolean;
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: boolean;
     OPENAI_API_KEY: boolean;
     NEXT_PUBLIC_APP_URL: boolean;
   };
@@ -19,7 +18,7 @@ interface DiagnosticsResponse {
   };
   auth: {
     configured: boolean;
-    routeResponding: boolean | null;
+    supabaseReachable: boolean | null;
   };
   ai: {
     configured: boolean;
@@ -27,12 +26,11 @@ interface DiagnosticsResponse {
   overallStatus: StatusLevel;
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   const env = {
-    POSTGRES_URL: Boolean(process.env.POSTGRES_URL),
-    BETTER_AUTH_SECRET: Boolean(process.env.BETTER_AUTH_SECRET),
-    GOOGLE_CLIENT_ID: Boolean(process.env.GOOGLE_CLIENT_ID),
-    GOOGLE_CLIENT_SECRET: Boolean(process.env.GOOGLE_CLIENT_SECRET),
+    DATABASE_URL: Boolean(process.env.DATABASE_URL),
+    NEXT_PUBLIC_SUPABASE_URL: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY),
     NEXT_PUBLIC_APP_URL: Boolean(process.env.NEXT_PUBLIC_APP_URL),
   } as const;
@@ -41,7 +39,7 @@ export async function GET(req: Request) {
   let dbConnected = false;
   let schemaApplied = false;
   let dbError: string | undefined;
-  if (env.POSTGRES_URL) {
+  if (env.DATABASE_URL) {
     try {
       const [{ db }, { sql }, schema] = await Promise.all([
         import("@/lib/db"),
@@ -53,7 +51,7 @@ export async function GET(req: Request) {
       dbConnected = true;
       try {
         // Touch a known table to verify migrations
-        await db.select().from(schema.user).limit(1);
+        await db.select().from(schema.profiles).limit(1);
         schemaApplied = true;
       } catch {
         schemaApplied = false;
@@ -65,37 +63,30 @@ export async function GET(req: Request) {
   } else {
     dbConnected = false;
     schemaApplied = false;
-    dbError = "POSTGRES_URL is not set";
+    dbError = "DATABASE_URL is not set";
   }
 
-  // Auth route check: we consider the route responding if it returns any HTTP response
-  // for /api/auth/session (status codes in the 2xx-4xx range are acceptable for readiness)
-  const origin = (() => {
+  // Check Supabase reachability
+  let supabaseReachable: boolean | null = null;
+  if (env.NEXT_PUBLIC_SUPABASE_URL) {
     try {
-      return new URL(req.url).origin;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/health`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      supabaseReachable = res.status === 200;
     } catch {
-      return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      supabaseReachable = false;
     }
-  })();
-
-  let authRouteResponding: boolean | null = null;
-  try {
-    const res = await fetch(`${origin}/api/auth/session`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
-    authRouteResponding = res.status >= 200 && res.status < 500;
-  } catch {
-    authRouteResponding = false;
   }
 
   const authConfigured =
-    env.BETTER_AUTH_SECRET && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET;
+    env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const aiConfigured = env.OPENAI_API_KEY; // We avoid live-calling the AI provider here
 
   const overallStatus: StatusLevel = (() => {
-    if (!env.POSTGRES_URL || !dbConnected || !schemaApplied) return "error";
+    if (!env.DATABASE_URL || !dbConnected || !schemaApplied) return "error";
     if (!authConfigured) return "error";
     // AI is optional; warn if not configured
     if (!aiConfigured) return "warn";
@@ -112,7 +103,7 @@ export async function GET(req: Request) {
     },
     auth: {
       configured: authConfigured,
-      routeResponding: authRouteResponding,
+      supabaseReachable: supabaseReachable,
     },
     ai: {
       configured: aiConfigured,

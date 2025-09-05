@@ -1,9 +1,9 @@
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/providers/supabase-auth-provider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agentic Coding Boilerplate",
+  title: "HITL Platform - Human in the Loop",
   description:
-    "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling - perfect for building AI-powered applications and autonomous agents by Leon van Zyl",
+    "Human in the Loop platform for managing AI agent questions and cases that require human intervention",
 };
 
 export default function RootLayout({
@@ -37,9 +37,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SiteHeader />
-          {children}
-          <SiteFooter />
+          <AuthProvider>
+            <div className="flex flex-col min-h-screen">
+              <SiteHeader />
+              <main className="flex-1">
+                {children}
+              </main>
+            </div>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

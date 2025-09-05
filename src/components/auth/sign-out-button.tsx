@@ -1,30 +1,19 @@
 "use client";
 
-import { signOut, useSession } from "@/lib/auth-client";
+import { useAuth } from "@/providers/supabase-auth-provider";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 export function SignOutButton() {
-  const { data: session, isPending } = useSession();
-  const router = useRouter();
+  const { user, signOut } = useAuth();
 
-  if (isPending) {
-    return <Button disabled>Loading...</Button>;
-  }
-
-  if (!session) {
+  if (!user) {
     return null;
   }
 
   return (
-    <Button
-      variant="outline"
-      onClick={async () => {
-        await signOut();
-        router.replace("/");
-        router.refresh();
-      }}
-    >
+    <Button onClick={signOut} variant="outline" size="sm">
+      <LogOut className="h-4 w-4 mr-2" />
       Sign out
     </Button>
   );
